@@ -1,0 +1,6 @@
+
+0.3.1	* Better documentation (INSTALLATION section...)
+		* add TODO
+		* more best practices: 'use strict' before any other code, avoid barewords for filehandles, ...
+
+0.3.0	* Initial commit

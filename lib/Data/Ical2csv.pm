@@ -2,22 +2,27 @@
 
 =head1 NAME
 
-Ical2csv - Converts an ICS file to a CSV file. **Still early stage**
+Ical2csv - Converts an iCal file (aka .ics) to a CSV file. **Still early stage**
 
 =head1 VERSION
 
-Version 0.3.0, 20150215.
+Version 0.3.1, 20150223.
 
 =head1 SYNOPSYS
 
 Ical2csv.pm --file=<FILE> [--outputfile=<FILE>] [--sep=,] [--verbosity=0|1|2|3]
+
 Ical2csv.pm --url=<url> [--outputfile=<FILE>] [--sep=,] [--verbosity=0|1|2|3]
 
 Usage: $ perl ./Ical2csv.pm --file=thisical.ics
+
 Usage: $ perl ./Ical2csv.pm --file=thisical.ics --sep=; --vprop=SUMMARY,LOCATION,DTSTART,DTEND,DESCRIPTION
-	--> Create a CSV file called thisical.ics.csv
+
+--> Create a CSV file called thisical.ics.csv
+
 Usage: $ perl ./Ical2csv.pm --url=http://example.com/calendar.ics
-	--> Create a CSV fille called basic.ics.csv
+
+--> Create a CSV fille called basic.ics.csv
 
 Should work with a basic Perl (without particular module). Needs curl tool to import ics file from an URL.
 
@@ -26,24 +31,47 @@ Should work with a basic Perl (without particular module). Needs curl tool to im
 ICAL is a file format to represent calendars. ICAL data is produced and managed by calendars applications.
 But these applications haven't been build to own complex manipulations of the data, such as statistics,
 mass operations, filtered exports, etc.
-ical2csv converts an ICS file to a CSV file -- a simple file format where each line represent a record.
+
+Ical2csv converts an ICS file to a CSV file -- a simple file format where each line represent a record.
 CSV file format allows easier data manipulation with tools such as spreadsheet processors, common data tools
 or languages (R, Perl, Python, AWK...).
 
 Ical2csv takes each event of the calendars and build a record for it.
 
-Options
+Options:
+
  --file 			complete name of the ICS file.
  --url 				URL of the ICS file.
- --dlmtr 			[optional] delimiter (separator) of the CSV files produced. Generally "," (default) or ";"
+ --dlmtr 			[optional] delimiter (separator) of the CSV file produced. Generally "," (default) or ";"
 					Ex. --dlmtr=";"
  --endofline 		[optional] type of end of line. It can be: "\n" (Unices), "\r" (MacOS) or "\r\n" (Windows)? Default "\r\n".
-
  --outputfile 		[optional] name of the file to produce. Default is <sourcefile>.csv.
  					Ex. --outputfile=2015.csv
  --v, --verbosity 	[optional] verbose mode represented by a number between 0 and 3. Default is "1" which means small verbosity.
 					0 means no verbosity at all.
 					Ex. --v=1
+
+
+=head1 INSTALLATION
+
+To use this script:
+* simply download /lib/Data/Ical2csv.pm
+* use it with perl interpreter. Example:
+	* perl ./Ical2csv.pm --file=thisical.ics
+
+This should work under Linux, MacOS and may be Windows as well (except the --url option).
+
+Alternatively, you can make the script executable, thus you can use it without 'perl' command.
+
+Under Linux:
+	chmod a+x Ical2csv.pm
+	./Ical2csv.pm --file=thisical.ics
+
+Under MacOS:
+	chmod a+x Ical2csv.pm
+	Ical2csv.pm --file=thisical.ics
+
+
 
 
 =cut
@@ -52,6 +80,9 @@ Options
 #       * how to install?
 #       * how to contribute/report problems
 # TODO: sub valid_url without using external modules
+# TODO: output on STDOUT, without creating any new file; examples of usages:
+# 		* sort lines (pipe with sort)
+# 		* filter some lines (pipe with grep)
 
 =head1 AUTHOR
 
@@ -65,11 +96,11 @@ Open Source software under BSD licence.
 
 
 package Data::Ical2csv;
-our $VERSION = '0.3.0'; # Every CPAN module needs a version
-
-use 5.6.0; 		# Because "three-argument" open() comes with Perl 5.6 [2001]
-use strict;
+use strict; 				# At the very beginning as suggested by Perl::Critic
 use warnings;
+use 5.6.0; 					# Because "three-argument" open() comes with Perl 5.6 [2001]
+
+our $VERSION = '0.3.1'; 	# Every CPAN module needs a version
 
 
 __PACKAGE__->run( @ARGV ) unless caller;
@@ -101,6 +132,7 @@ sub run {
 	if (@overidevprop) { undef @vprop; my @vprop = split(',',join(',',@overidevprop)); }
 
 	&ical2csv ($inputfile, $url, $outputfile, $sep, \@vprop, $endofline, $verbosity);
+	return 0;
 }
 
 
@@ -161,37 +193,40 @@ sub ical2csv {
 
 	print STDOUT "\nExtracting events from file: $inputfile\n\n" if ($verbosity >= 1);
 
-	# ---- Process long lines and end of lines --- RFC says:
+	# ---- Process long lines and end of lines
+	# RFC says:
 	# Lines of text SHOULD NOT be longer than 75 octets [...].
 	# Long content lines SHOULD be split into a multiple line representations
 	# using a line "folding" technique.  That is, a long line can be split
 	# between any two characters by inserting a CRLF immediately followed
 	# by a single linear white-space character (i.e., SPACE or HTAB).
-	if (!(open (ICS, "<", "$inputfile")))		{ print "\nCannot open $inputfile: $!\n\n" if ($verbosity >= 1); 		return 4; }
-	if (!(open (TMP, ">", "$inputfile.tmp")))	{ print "\nCannot open $inputfile.tmp: $!\n\n" if ($verbosity >= 1); 	return 5; }
+	my ($ics, $tmp);
+	if (!(open ($ics, "<", "$inputfile")))		{ print "\nCannot open $inputfile: $!\n\n" if ($verbosity >= 1); 		return 4; }
+	if (!(open ($tmp, ">", "$inputfile.tmp")))	{ print "\nCannot open $inputfile.tmp: $!\n\n" if ($verbosity >= 1); 	return 5; }
 	undef $/; # "file-slurp" mode: \n is no more a special char
-	while (<ICS>) {
+	while (<$ics>) {
 		$_=~ s/(\r\n|\n|\r)( |\t)//mg;
 		$_=~ s/(\r\n|\n\\r)/\n/mg;
-		print TMP "$_";
+		print $tmp "$_";
 	}
-	close (ICS);
-	close (TMP);
+	close ($ics);
+	close ($tmp);
 
 	# ---- Main processes
-	if (!(open (SOURCE, "<", "$inputfile.tmp")))	{ print "\nCannot open $inputfile.tmp: $!\n\n" if ($verbosity >= 1); 	return 6; }
-	if (!(open (EXPORT, ">", "$outputfile")))		{ print "\nCannot open $outputfile: $!\n\n" if ($verbosity >= 1); 		return 7; }
+	my ($SOURCE, $EXPORT);
+	if (!(open ($SOURCE, "<", "$inputfile.tmp")))  { print "\nCannot open $inputfile.tmp: $!\n\n" if ($verbosity >= 1);  return 6; }
+	if (!(open ($EXPORT, ">", "$outputfile")))     { print "\nCannot open $outputfile: $!\n\n" if ($verbosity >= 1);     return 7; }
 
 	my $event_nb = 0;
 	my %event = ();
 	$/ = "\n";
 
 	# CSV header
-	foreach my $h (@props) { print EXPORT '"' . $h . '"' . $sep; print STDOUT "Property: $h\n" if ($verbosity >= 2); }
-	print EXPORT $endofline;
+	foreach my $h (@props) { print $EXPORT '"' . $h . '"' . $sep; print STDOUT "Property: $h\n" if ($verbosity >= 2); }
+	print $EXPORT $endofline;
 
 	# Process properties
-	while (<SOURCE>) {
+	while (<$SOURCE>) {
 		my ($prop, $va) = split(':', $_, 2);	# iCal records lines with property/value separated by a ":"
 		chop $va 	if ($va);					# Removes any trailing string that corresponds to the current value of $/ (should be \n)
 		print STDOUT "$prop ----> $va\n" if ($verbosity >= 3); # print each pair property/value if "-v" option
@@ -200,8 +235,8 @@ sub ical2csv {
 		$prop =~ s/^(DT(END|START));VALUE=DATE/$1/; # Manage "DTSTART;VALUE=DATE:20141224" (all day events)
 		$event{$prop} = $va;
 		if ($_ =~ "END:VEVENT") {		# End of the record? => for each wanted property, export each value as a CSV line
-			foreach my $v (@props) { ($event{$v}) ? print EXPORT '"' . $event{$v} . '"' . $sep : print EXPORT '""' . $sep; }
-			print EXPORT $endofline;	# End of record
+			foreach my $v (@props) { ($event{$v}) ? print $EXPORT '"' . $event{$v} . '"' . $sep : print $EXPORT '""' . $sep; }
+			print $EXPORT $endofline;	# End of record
 		}
 	}
 
@@ -210,7 +245,7 @@ sub ical2csv {
 	print STDOUT "$event_nb events completed in file $outputfile\n\n" 		if ($verbosity >= 1);
 
 
-	close (SOURCE); close (EXPORT);
+	close ($SOURCE); close ($EXPORT);
 	unlink <$inputfile.tmp>;
 	return 0;
 }
