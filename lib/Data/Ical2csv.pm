@@ -55,23 +55,24 @@ Options:
 =head1 INSTALLATION
 
 To use this script:
-* simply download /lib/Data/Ical2csv.pm
+
+* simply download https://raw.githubusercontent.com/CharlesNepote/ical2csv/master/lib/Data/Ical2csv.pm
 * use it with perl interpreter. Example:
-	* perl ./Ical2csv.pm --file=thisical.ics
+  * perl ./Ical2csv.pm --file=thisical.ics
 
 This should work under Linux, MacOS and may be Windows as well (except the --url option).
 
 Alternatively, you can make the script executable, thus you can use it without 'perl' command.
 
 Under Linux:
-	chmod a+x Ical2csv.pm
-	./Ical2csv.pm --file=thisical.ics
+
+    chmod a+x Ical2csv.pm
+    ./Ical2csv.pm --file=thisical.ics
 
 Under MacOS:
-	chmod a+x Ical2csv.pm
-	Ical2csv.pm --file=thisical.ics
 
-
+    chmod a+x Ical2csv.pm
+    ./Ical2csv.pm --file=thisical.ics
 
 
 =cut

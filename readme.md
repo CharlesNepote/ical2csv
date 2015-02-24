@@ -49,6 +49,29 @@ Ical2csv takes each event of the calendars and build a record for it.
 						Ex. --v=1
 
 
+# INSTALLATION
+
+To use this script:
+
+* simply download [/lib/Data/Ical2csv.pm](https://raw.githubusercontent.com/CharlesNepote/ical2csv/master/lib/Data/Ical2csv.pm)
+* use it with perl interpreter. Example:
+  * `perl ./Ical2csv.pm --file=thisical.ics`
+
+This should work under Linux, MacOS and may be Windows as well (except the --url option).
+
+Alternatively, you can make the script executable, thus you can use it without 'perl' command.
+
+Under Linux:
+
+    chmod a+x Ical2csv.pm
+    ./Ical2csv.pm --file=thisical.ics
+
+Under MacOS:
+
+    chmod a+x Ical2csv.pm
+    ./Ical2csv.pm --file=thisical.ics
+
+
 # AUTHOR
 
 Charles Nepote <charles@nepote.org>
