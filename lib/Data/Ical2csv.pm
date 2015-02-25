@@ -2,17 +2,17 @@
 
 =head1 NAME
 
-Ical2csv - Converts an iCal file (aka .ics) to a CSV file. **Still early stage**
+Ical2csv - Converts an iCal file (aka .ics) to a CSV file. B<Still early stage>
 
 =head1 VERSION
 
-Version 0.3.1, 20150223.
+Version 0.3.2, 20150225.
 
 =head1 SYNOPSYS
 
-Ical2csv.pm --file=<FILE> [--outputfile=<FILE>] [--sep=,] [--verbosity=0|1|2|3]
+Ical2csv.pm --file=F<< <FILE> >> [--outputfile=<FILE>] [--sep=,] [--verbosity=0|1|2|3]
 
-Ical2csv.pm --url=<url> [--outputfile=<FILE>] [--sep=,] [--verbosity=0|1|2|3]
+Ical2csv.pm --url=F<< <url> >> [--outputfile=<FILE>] [--sep=,] [--verbosity=0|1|2|3]
 
 Usage: $ perl ./Ical2csv.pm --file=thisical.ics
 
@@ -40,25 +40,36 @@ Ical2csv takes each event of the calendars and build a record for it.
 
 Options:
 
- --file 			complete name of the ICS file.
- --url 				URL of the ICS file.
- --dlmtr 			[optional] delimiter (separator) of the CSV file produced. Generally "," (default) or ";"
-					Ex. --dlmtr=";"
- --endofline 		[optional] type of end of line. It can be: "\n" (Unices), "\r" (MacOS) or "\r\n" (Windows)? Default "\r\n".
- --outputfile 		[optional] name of the file to produce. Default is <sourcefile>.csv.
- 					Ex. --outputfile=2015.csv
- --v, --verbosity 	[optional] verbose mode represented by a number between 0 and 3. Default is "1" which means small verbosity.
-					0 means no verbosity at all.
-					Ex. --v=1
+    --file            complete name of the ICS file.
+    --url             URL of the ICS file.
+    --dlmtr           [optional] delimiter (separator) of the CSV file produced. Generally "," (default) or ";"
+                      Ex. --dlmtr=";"
+    --endofline       [optional] type of end of line. It can be: "\n" (Unices), "\r" (MacOS) or "\r\n" (Windows)? Default "\r\n".
+    --outputfile      [optional] name of the file to produce. Default is <sourcefile>.csv.
+                      Ex. --outputfile=2015.csv
+    --v, --verbosity  [optional] verbose mode represented by a number between 0 and 3. Default is "1" which means small verbosity.
+                      0 means no verbosity at all.
+                      Ex. --v=1
 
 
 =head1 INSTALLATION
 
 To use this script:
 
-* simply download https://raw.githubusercontent.com/CharlesNepote/ical2csv/master/lib/Data/Ical2csv.pm
-* use it with perl interpreter. Example:
-  * perl ./Ical2csv.pm --file=thisical.ics
+=over1
+
+=item simply download L<https://raw.githubusercontent.com/CharlesNepote/ical2csv/master/lib/Data/Ical2csv.pm>
+
+=item use it with perl interpreter. Example:
+
+=over2
+
+=item perl ./Ical2csv.pm --file=thisical.ics
+
+=back
+
+=back
+
 
 This should work under Linux, MacOS and may be Windows as well (except the --url option).
 
@@ -77,6 +88,7 @@ Under MacOS:
 
 =cut
 
+# TODO: Use named arguments: http://perldesignpatterns.com/?NamedArguments
 # TODO: more documentation:
 #       * how to install?
 #       * how to contribute/report problems
@@ -84,6 +96,8 @@ Under MacOS:
 # TODO: output on STDOUT, without creating any new file; examples of usages:
 # 		* sort lines (pipe with sort)
 # 		* filter some lines (pipe with grep)
+# TODO: evaluate File::Fetch instead of curl: https://metacpan.org/pod/File::Fetch
+#       (a core module as said on http://perldoc.perl.org/File/Fetch.html ?)
 
 =head1 AUTHOR
 
