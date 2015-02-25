@@ -19,24 +19,50 @@ my @dlmtrs = (",", ";", "|", "\t");
 my @endoflines = ("\r\n", "\n", "\r");
 
 # 1. If neither inputfile or url is provided
-my $error1 = Data::Ical2csv::ical2csv("", "", "", ",", \@vprop, "\r\n", 0);
+my $error1 = Data::Ical2csv::ical2csv(
+	sep => ",",
+	vprop => \@vprop,
+	endofline => "\r\n",
+	verbosity => 0);
 is($error1, 1, "Data::Ical2csv::ical2csv ends correctly (1) if neither inputfile or url is provided");
 
 # 2. If both inputfile and url are provided
-my $error_both = Data::Ical2csv::ical2csv("basic.ics", "http://example.com/", "", ",", \@vprop, "\r\n", 0);
+my $error_both = Data::Ical2csv::ical2csv(
+	inputfile => "basic.ics",
+	url => "http://example.com/",
+	sep => ",",
+	prop => \@vprop,
+	endofline => "\r\n",
+	verbosity => 0);
 is($error_both, 2, "Data::Ical2csv::ical2csv ends correctly (2) if both inputfile and url are provided");
 
 # 3. If curl can't open the url provided
-my $test_url = Data::Ical2csv::ical2csv("", "http://________", "", ",", \@vprop, "\r\n", 0);
+my $test_url = Data::Ical2csv::ical2csv(
+	url=> "http://________",
+	sep => ",",
+	prop => \@vprop,
+	endofline => "\r\n",
+	verbosity => 0);
 is($test_url, 3, "Data::Ical2csv::ical2csv ends correctly (3) if curl can't open the url provided");
 
 # 4-5. First range of tests
-my $test1 = Data::Ical2csv::ical2csv("test.ics", "", "", ",", \@vprop, "\r\n", 0);
+my $test1 = Data::Ical2csv::ical2csv(
+	inputfile => "test.ics",
+	sep => ",",
+	prop => \@vprop,
+	endofline => "\r\n",
+	verbosity => 0);
 is($test1, 0, "Data::Ical2csv::ical2csv ends correctly (0)");
 is(compare("test.ics.csv", "control.test.ics.csv"), 0, "test.ics.csv et control.test.ics.csv are the same");
 
 # 6-7. Second range of tests: --output="output.csv"
-my $test2 = Data::Ical2csv::ical2csv("test.ics", "", "output.csv", ",", \@vprop, "\r\n", 0);
+my $test2 = Data::Ical2csv::ical2csv(
+	inputfile => "test.ics",
+	outputfile => "output.csv",
+	sep => ",",
+	prop => \@vprop,
+	endofline => "\r\n",
+	verbosity => 0);
 is($test2, 0, "Data::Ical2csv::ical2csv ends correctly (0)");
 is(compare("output.csv", "control.test.ics.csv"), 0, "output.csv et control.test.ics.csv are the same");
 
@@ -46,7 +72,13 @@ foreach my $dlmtr (@dlmtrs) {
 	foreach my $endofline (@endoflines) {
 		$e++;
 		$out = "output.".$d.$e.".csv";
-		my $test = Data::Ical2csv::ical2csv("test.ics", "", $out, $dlmtr, \@vprop, $endofline, 0);
+		my $test = Data::Ical2csv::ical2csv(
+			inputfile => "test.ics",
+			outputfile => $out,
+			sep => $dlmtr,
+			prop => \@vprop,
+			endofline => $endofline,
+			verbosity => 0);
 		is($test, 0, "Data::Ical2csv::ical2csv ends correctly (0) -- outputfile=$out, dlmtr=$dlmtr, endofline=$endofline");
 		is(compare($out, "control.".$out), 0, "$out et control.$out are the same");
 	}

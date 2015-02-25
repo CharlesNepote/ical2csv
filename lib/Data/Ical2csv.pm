@@ -6,7 +6,7 @@ Ical2csv - Converts an iCal file (aka .ics) to a CSV file. B<Still early stage>
 
 =head1 VERSION
 
-Version 0.3.2, 20150225.
+Version 0.3.3, 20150225.
 
 =head1 SYNOPSYS
 
@@ -88,7 +88,6 @@ Under MacOS:
 
 =cut
 
-# TODO: Use named arguments: http://perldesignpatterns.com/?NamedArguments
 # TODO: more documentation:
 #       * how to install?
 #       * how to contribute/report problems
@@ -115,7 +114,7 @@ use strict; 				# At the very beginning as suggested by Perl::Critic
 use warnings;
 use 5.6.0; 					# Because "three-argument" open() comes with Perl 5.6 [2001]
 
-our $VERSION = '0.3.1'; 	# Every CPAN module needs a version
+our $VERSION = '0.3.3'; 	# Every CPAN module needs a version
 
 
 __PACKAGE__->run( @ARGV ) unless caller;
@@ -146,16 +145,39 @@ sub run {
 				"v|verbosity:i" => \$verbosity);
 	if (@overidevprop) { undef @vprop; my @vprop = split(',',join(',',@overidevprop)); }
 
-	&ical2csv ($inputfile, $url, $outputfile, $sep, \@vprop, $endofline, $verbosity);
+	&ical2csv (
+		inputfile 	=> $inputfile,
+		url 		=> $url,
+		outputfile 	=> $outputfile,
+		sep 		=> $sep,
+		vprop 		=> \@vprop,
+		endofline 	=> $endofline,
+		verbosity 	=> $verbosity
+		);
 	return 0;
 }
 
 
 # 3. Actions ---------------------
 sub ical2csv {
-	no strict "refs"; # Because use strict disables the use of symbolic references, and we need it here.
-	my ($inputfile, $url, $outputfile, $sep, $refvprop, $endofline, $verbosity) = @_;
-	if (!(defined $verbosity)) 	{ $verbosity = 1 };
+	my %args = ( 					# http://perldesignpatterns.com/?NamedArguments
+		  verbosity   => 1,
+		  sep         => ",", 		# Following RFC 4180 https://tools.ietf.org/html/rfc4180
+		  endofline   => "\r\n", 	# Following RFC 4180 https://tools.ietf.org/html/rfc4180
+		  inputfile   => undef,
+		  outputfile  => undef,
+		  url         => undef,
+		  vprop       => undef,
+		  @_
+		);
+
+	my $verbosity 			= $args{verbosity} 		|| 1;
+	my $sep 				= $args{sep} 			|| ",";
+	my $endofline 			= $args{endofline} 		|| "\r\n";
+	my $inputfile 			= $args{inputfile};
+	my $outputfile 			= $args{outputfile};
+	my $url 				= $args{url};
+	my @vprop 				= ${args{vprop}};
 
 	# ---- Input controls
 	if ($inputfile && $url)		{
@@ -178,9 +200,9 @@ sub ical2csv {
 	if ($url) {
 		# TODO: validate URL
 		# Transfert ics from the web to the filesystem
-		my @args = ("curl", "$url", "-o", "basic.ics");
-		if (system (@args) != 0) {
-			print "\nSystem @args failed: $? \n\n" if ($verbosity >= 1);
+		my @args4curl = ("curl", "$args{url}", "-o", "basic.ics");
+		if (system (@args4curl) != 0) {
+			print "\nSystem @args4curl failed: $? \n\n" if ($verbosity >= 1);
 			return 3;
 		}
 		$inputfile = "basic.ics";
@@ -188,11 +210,9 @@ sub ical2csv {
 
 	# ---- Default values if no option is provided. Separator, wanted properties, endfoline and verbosity.
 	if (!$outputfile) 			{ $outputfile = $inputfile . ".csv"; }
-	if (!$sep) 					{ my $sep = ";" } 				#
-	if (!$endofline) 			{ my $endofline = "\r\n"; } 	# Following RFC 4180 https://tools.ietf.org/html/rfc4180
 	my (@props) = ();
 	# TODO: control @props based on exiting properties in iCal RFC
-	if (@{$refvprop}) 			{ my (@props) = @{$_[3]}; }
+	if (@vprop) 				{ my (@props) = @vprop; }
 	if (!@props) 				{ @props = ( 	"SUMMARY", "LOCATION", "DTSTART", "DTEND",
 												"CREATED", "DESCRIPTION", "LAST-MODIFIED", "SEQUENCE",
 												"STATUS", "CONFIRMED", "TRANSP"); }
