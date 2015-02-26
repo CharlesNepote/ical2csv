@@ -4,7 +4,7 @@ Ical2csv - Converts an iCal file (aka .ics) to a CSV file. __Still early stage__
 
 # VERSION
 
-Version 0.3.2, 20150225.
+Version 0.3.4, 20150226.
 
 # SYNOPSYS
 
@@ -45,6 +45,13 @@ Options:
     --endofline       [optional] type of end of line. It can be: "\n" (Unices), "\r" (MacOS) or "\r\n" (Windows)? Default "\r\n".
     --outputfile      [optional] name of the file to produce. Default is <sourcefile>.csv.
                       Ex. --outputfile=2015.csv
+    --vprop           [optional] iCal properties to process, delimited by a comma.
+                      Example: --vprop="SUMMARY,DTSTART"
+                      List of the possible properties:
+                      "SUMMARY", "LOCATION", "DTSTART", "DTEND",
+                      "DTSTAMP", "UID",
+                      "CREATED", "DESCRIPTION", "LAST-MODIFIED",
+                      "SEQUENCE", "STATUS", "CONFIRMED", "TRANSP"
     --v, --verbosity  [optional] verbose mode represented by a number between 0 and 3. Default is "1" which means small verbosity.
                       0 means no verbosity at all.
                       Ex. --v=1

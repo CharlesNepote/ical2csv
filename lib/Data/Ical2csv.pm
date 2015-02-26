@@ -6,7 +6,7 @@ Ical2csv - Converts an iCal file (aka .ics) to a CSV file. B<Still early stage>
 
 =head1 VERSION
 
-Version 0.3.3, 20150225.
+Version 0.3.4, 20150226.
 
 =head1 SYNOPSYS
 
@@ -47,6 +47,13 @@ Options:
     --endofline       [optional] type of end of line. It can be: "\n" (Unices), "\r" (MacOS) or "\r\n" (Windows)? Default "\r\n".
     --outputfile      [optional] name of the file to produce. Default is <sourcefile>.csv.
                       Ex. --outputfile=2015.csv
+    --vprop           [optional] iCal properties to process, delimited by a comma.
+                      Example: --vprop="SUMMARY,DTSTART"
+                      List of the possible properties:
+                      "SUMMARY", "LOCATION", "DTSTART", "DTEND",
+                      "DTSTAMP", "UID",
+                      "CREATED", "DESCRIPTION", "LAST-MODIFIED",
+                      "SEQUENCE", "STATUS", "CONFIRMED", "TRANSP"
     --v, --verbosity  [optional] verbose mode represented by a number between 0 and 3. Default is "1" which means small verbosity.
                       0 means no verbosity at all.
                       Ex. --v=1
@@ -88,15 +95,19 @@ Under MacOS:
 
 =cut
 
+# TODO: facilitate script version update (in pod ?)
+# TODO: tests :
+#       * test with "prop"
+# TODO: control @props based on exiting properties in iCal RFC (create a dedicated function &is_ical_prop())
 # TODO: more documentation:
-#       * how to install?
 #       * how to contribute/report problems
-# TODO: sub valid_url without using external modules
-# TODO: output on STDOUT, without creating any new file; examples of usages:
+# TODO: as a module, return CSV data into an array
+# TODO: as a script, output on STDOUT, without creating any new file; examples of usages:
 # 		* sort lines (pipe with sort)
 # 		* filter some lines (pipe with grep)
 # TODO: evaluate File::Fetch instead of curl: https://metacpan.org/pod/File::Fetch
 #       (a core module as said on http://perldoc.perl.org/File/Fetch.html ?)
+# TODO: sub valid_url without using external modules
 
 =head1 AUTHOR
 
@@ -114,7 +125,7 @@ use strict; 				# At the very beginning as suggested by Perl::Critic
 use warnings;
 use 5.6.0; 					# Because "three-argument" open() comes with Perl 5.6 [2001]
 
-our $VERSION = '0.3.3'; 	# Every CPAN module needs a version
+our $VERSION = '0.3.4'; 	# Every CPAN module needs a version
 
 
 __PACKAGE__->run( @ARGV ) unless caller;
@@ -122,37 +133,43 @@ __PACKAGE__->run( @ARGV ) unless caller;
 
 sub run {
 	use Getopt::Long;
-	our($inputfile, $url, $outputfile, $sep, @vprop, @overidevprop, $verbosity);
+	our($inputfile, $url, $outputfile, $sep, @vprop, @overidevprop, $endofline, $verbosity);
 
 	# 1. Configuration ---------------
-	# Separator
-	$sep = ",";
+	$sep = ","; 			# Separator
+	$endofline = "\r\n"; 	# RFC 4180 suggest, for CSV files, that:
+							# "Each record is located on a separate line,
+							# delimited by a line break (CRLF)" [\r\n].
+	$verbosity = 1;
 	# List of wanted properties
-	@vprop = ("SUMMARY", "LOCATION", "DTSTART", "DTEND", "CREATED", "DESCRIPTION", "LAST-MODIFIED", "SEQUENCE", "STATUS", "CONFIRMED", "TRANSP");
-	#@vprop = ("SUMMARY", "DTSTART", "DTEND", "DTSTAMP", "UID", "CREATED", "DESCRIPTION", "LAST-MODIFIED", "LOCATION", "SEQUENCE", "STATUS", "CONFIRMED", "TRANSP");
-	# Choose the end of line of the CSV file produced.
-	#   \n (ie LF) is ok for unices.
-	#   RFC 4180 suggest, for CSV files, that "Each record is located on a separate line, delimited by a line break (CRLF)" [\r\n].
-	my $endofline = "\r\n";
+	@vprop = ("SUMMARY", "LOCATION", "DTSTART", "DTEND",
+				"CREATED", "DESCRIPTION", "LAST-MODIFIED",
+				"SEQUENCE", "STATUS", "CONFIRMED", "TRANSP");
+	#@vprop = ("SUMMARY", "LOCATION", "DTSTART", "DTEND",
+	#			"DTSTAMP", "UID",
+	# 			"CREATED", "DESCRIPTION", "LAST-MODIFIED",
+	# 			"SEQUENCE", "STATUS", "CONFIRMED", "TRANSP");
 
 
 	# 2. Command line parameters -----
-	GetOptions ("file:s" 		=> \$inputfile,
+	GetOptions (
+				"file:s" 		=> \$inputfile,
 				"url:s" 		=> \$url,
 				"outputfile:s" 	=> \$outputfile,
 				"sep:s" 		=> \$sep,
-				"vprop:s" 		=> \@overidevprop,
-				"v|verbosity:i" => \$verbosity);
-	if (@overidevprop) { undef @vprop; my @vprop = split(',',join(',',@overidevprop)); }
+				"vprop:s" 		=> \@overidevprop, 		# --vprop="SUMMARY,LOCATION,DTSTART"
+				"v|verbosity:i" => \$verbosity,
+				);
+	if (@overidevprop) { undef @vprop; @vprop = split(',',join(',',@overidevprop)); }
 
 	&ical2csv (
 		inputfile 	=> $inputfile,
 		url 		=> $url,
 		outputfile 	=> $outputfile,
 		sep 		=> $sep,
-		vprop 		=> \@vprop,
 		endofline 	=> $endofline,
-		verbosity 	=> $verbosity
+		vprop 		=> \@vprop, 		# The values of hashes have to be scalars
+		verbosity 	=> $verbosity,
 		);
 	return 0;
 }
@@ -161,23 +178,26 @@ sub run {
 # 3. Actions ---------------------
 sub ical2csv {
 	my %args = ( 					# http://perldesignpatterns.com/?NamedArguments
-		  verbosity   => 1,
+		  verbosity   => 1, 		# verbosity: 0 means null, 3 is max verbosity
 		  sep         => ",", 		# Following RFC 4180 https://tools.ietf.org/html/rfc4180
 		  endofline   => "\r\n", 	# Following RFC 4180 https://tools.ietf.org/html/rfc4180
 		  inputfile   => undef,
-		  outputfile  => undef,
 		  url         => undef,
-		  vprop       => undef,
+		  outputfile  => undef,
+		  vprop       => [ 	"SUMMARY", "LOCATION", "DTSTART", "DTEND",
+							"CREATED", "DESCRIPTION", "LAST-MODIFIED",
+							"SEQUENCE", "STATUS", "CONFIRMED", "TRANSP",
+							],
 		  @_
 		);
 
-	my $verbosity 			= $args{verbosity} 		|| 1;
-	my $sep 				= $args{sep} 			|| ",";
-	my $endofline 			= $args{endofline} 		|| "\r\n";
-	my $inputfile 			= $args{inputfile};
-	my $outputfile 			= $args{outputfile};
-	my $url 				= $args{url};
-	my @vprop 				= ${args{vprop}};
+	my $verbosity 		= $args{verbosity} 		|| "0E0";
+	my $sep 			= $args{sep} 			|| ",";
+	my $endofline 		= $args{endofline} 		|| "\r\n";
+	my $inputfile 		= $args{inputfile};
+	my $outputfile 		= $args{outputfile};
+	my $url 			= $args{url};
+	my @vprop 			= @{$args{vprop}};
 
 	# ---- Input controls
 	if ($inputfile && $url)		{
@@ -212,10 +232,12 @@ sub ical2csv {
 	if (!$outputfile) 			{ $outputfile = $inputfile . ".csv"; }
 	my (@props) = ();
 	# TODO: control @props based on exiting properties in iCal RFC
-	if (@vprop) 				{ my (@props) = @vprop; }
+	if (@vprop) 				{ @props = @vprop; }
 	if (!@props) 				{ @props = ( 	"SUMMARY", "LOCATION", "DTSTART", "DTEND",
 												"CREATED", "DESCRIPTION", "LAST-MODIFIED", "SEQUENCE",
-												"STATUS", "CONFIRMED", "TRANSP"); }
+												"STATUS", "CONFIRMED", "TRANSP",
+												);
+	}
 
 	$endofline =~ s/\\r/\r/; $endofline =~ s/\\n/\n/;
 
@@ -252,9 +274,9 @@ sub ical2csv {
 	if (!(open ($SOURCE, "<", "$inputfile.tmp")))  { print "\nCannot open $inputfile.tmp: $!\n\n" if ($verbosity >= 1);  return 6; }
 	if (!(open ($EXPORT, ">", "$outputfile")))     { print "\nCannot open $outputfile: $!\n\n" if ($verbosity >= 1);     return 7; }
 
-	my $event_nb = 0;
-	my %event = ();
-	$/ = "\n";
+	my $event_nb  = 0;
+	my %event     = ();
+	$/            = "\n";
 
 	# CSV header
 	foreach my $h (@props) { print $EXPORT '"' . $h . '"' . $sep; print STDOUT "Property: $h\n" if ($verbosity >= 2); }
@@ -263,11 +285,12 @@ sub ical2csv {
 	# Process properties
 	while (<$SOURCE>) {
 		my ($prop, $va) = split(':', $_, 2);	# iCal records lines with property/value separated by a ":"
-		chop $va 	if ($va);					# Removes any trailing string that corresponds to the current value of $/ (should be \n)
+		chop $va 	if ($va);					# Removes any trailing string that corresponds to the
+												# current value of $/ (should be \n)
 		print STDOUT "$prop ----> $va\n" if ($verbosity >= 3); # print each pair property/value if "-v" option
 		if ($_ =~ "BEGIN:VEVENT") { $event_nb++; next; }
 
-		$prop =~ s/^(DT(END|START));VALUE=DATE/$1/; # Manage "DTSTART;VALUE=DATE:20141224" (all day events)
+		$prop =~ s/^(DT(END|START));VALUE=DATE/$1/;    # Manage "DTSTART;VALUE=DATE:20141224" (all day events)
 		$event{$prop} = $va;
 		if ($_ =~ "END:VEVENT") {		# End of the record? => for each wanted property, export each value as a CSV line
 			foreach my $v (@props) { ($event{$v}) ? print $EXPORT '"' . $event{$v} . '"' . $sep : print $EXPORT '""' . $sep; }
@@ -276,8 +299,8 @@ sub ical2csv {
 	}
 
 	# Output statistics
-	print STDOUT "$. lines analysed\n" 										if ($verbosity >= 1);
-	print STDOUT "$event_nb events completed in file $outputfile\n\n" 		if ($verbosity >= 1);
+	print STDOUT "$. lines analysed\n" 									if ($verbosity >= 1);
+	print STDOUT "$event_nb events completed in file $outputfile\n\n" 	if ($verbosity >= 1);
 
 
 	close ($SOURCE); close ($EXPORT);

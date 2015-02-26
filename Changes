@@ -1,3 +1,5 @@
+0.3.4 : * Option --prop to select iCal properties to put in the CSV file (code, doc, test).
+
 0.3.3 : * Named arguments for main function; http://perldesignpatterns.com/?NamedArguments
 
 0.3.2 : * Better documentation. Generate README.md from pod with pod2markdown.
